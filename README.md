@@ -1,51 +1,183 @@
 <!---
 {
-  "depends_on": [],
+  "id": "f87c7e89-ece7-4c55-af54-16a3b3b7435f",
+  "depends_on": [
+    "AND",
+    "302c98a7-cbea-435c-ada2-bbf7538429a2",
+    "81f2e303-d35c-4857-9cb7-190e3c5372b0",
+    [
+      "OR",
+      "718193ef-11a1-408d-af23-4b10c24d490d", 
+      "99787eda-617a-4a68-b9a4-d60ec5c5c303"  
+    ]
+  ],
   "author": "Stephan Bökelmann",
-  "first_used": "2025-03-17",
-  "keywords": ["learning", "exercises", "education", "practice"]
+  "first_used": "2025-06-05",
+  "keywords": ["C Compiler", "Inline Assembly", "Syscall", "Objdump", "Locals and Globals", "Primitive Types"]
 }
 --->
 
-# Learning Through Exercises
+# C Compiler: Working with Primitive Types and Inspecting Binaries
+
+> In this exercise you will learn how to use basic C types such as `int`, `char`, and `float` and observe how the compiler transforms these into machine code. Furthermore we will explore how to analyze object files and executables using `objdump`, and how inline assembly can directly invoke system calls by manipulating registers.
 
 ## Introduction
-Learning by doing is one of the most effective methods to acquire new knowledge and skills. Rather than passively consuming information, actively engaging in problem-solving fosters deeper understanding and long-term retention. By working through structured exercises, students can grasp complex concepts in a more intuitive and applicable way. This approach is particularly beneficial in technical fields like programming, mathematics, and engineering.
+
+Up until now, we have mostly focused on the general structure of the compiler and how it translates high-level instructions into machine code. In this exercise, we will dive a little deeper and explore how simple C constructs are represented internally.
+
+The C language provides a set of **primitive data types**, such as:
+
+* `char`: typically 1 byte
+* `int`: typically 4 bytes on most modern systems
+* `float`: typically 4 bytes, following IEEE-754 floating point standard
+
+When you declare and manipulate these types in your C code, the compiler generates machine code that reflects these operations, assigning memory addresses (either on the stack for locals, or in the `.data` / `.bss` section for globals).
+
+Unlike the previous exercise, where the compiler managed everything for us, we will now intentionally compile partial code and analyze intermediate representations to understand what the compiler emits at each stage. This gives us visibility into:
+
+* how variables are laid out in memory,
+* how data types affect the generated instructions,
+* how the calling conventions handle return values and argument passing.
+
+We will also explore a very low-level capability of C: embedding **inline assembly**. This allows us to directly control CPU registers and issue instructions that are normally not accessible from plain C. In particular, we will craft a simple system call manually, without using the C library.
+
+This level of understanding is crucial for systems programming, operating system development, and reverse engineering, where knowing the ABI (Application Binary Interface) and calling conventions can make the difference between success and failure.
+
+> 🔍 **Why `objdump`?**
+> The `objdump` utility allows you to disassemble binaries and object files, revealing the exact instructions the CPU will execute. You can use it to correlate your C code with the resulting machine instructions, providing valuable insights into how compilers translate high-level abstractions into hardware operations.
 
 ### Further Readings and Other Sources
-- [The Importance of Practice in Learning](https://www.sciencedirect.com/science/article/pii/S036013151300062X)
-- "The Art of Learning" by Josh Waitzkin
-- [How to Learn Effectively: 5 Key Strategies](https://www.edutopia.org/article/5-research-backed-learning-strategies)
+
+* [System V AMD64 ABI (PDF)](https://gitlab.com/x86-psABIs/x86-64-ABI/-/raw/master/x86-64-ABI.pdf)
+* [Linux System Calls Table](https://filippo.io/linux-syscall-table/)
+* [GCC Inline Assembly Guide](https://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html)
+* [Introduction to objdump (YouTube)](https://www.youtube.com/watch?v=qJ1jYvLkxKg)
 
 ## Tasks
-1. **Write a Summary**: Summarize the concept of "learning by doing" in 3-5 sentences.
-2. **Example Identification**: List three examples from your own experience where learning through exercises helped you understand a topic better.
-3. **Create an Exercise**: Design a simple exercise for a topic of your choice that someone else could use to practice.
-4. **Follow an Exercise**: Find an online tutorial that includes exercises and complete at least two of them.
-5. **Modify an Existing Exercise**: Take a basic problem from a textbook or online course and modify it to make it slightly more challenging.
-6. **Pair Learning**: Explain a concept to a partner and guide them through an exercise without giving direct answers.
-7. **Review Mistakes**: Look at an exercise you've previously completed incorrectly. Identify why the mistake happened and how to prevent it in the future.
-8. **Time Challenge**: Set a timer for 10 minutes and try to solve as many simple exercises as possible on a given topic.
-9. **Self-Assessment**: Create a checklist to evaluate your own performance in completing exercises effectively.
-10. **Reflect on Progress**: Write a short paragraph on how this structured approach to exercises has influenced your learning.
 
-<details>
-  <summary>Tip for Task 5</summary>
-  Try making small adjustments first, such as increasing the difficulty slightly or adding an extra constraint.
-</details>
+### Task 1: Simple Program with Primitive Types
+
+Create the following C file:
+
+```C
+// file: primitives.c
+
+int global_int = 42;
+char global_char = 'A';
+float global_float = 3.1415;
+
+int main() {
+    int local_int = global_int + 5;
+    char local_char = global_char + 1;
+    float local_float = global_float * 2.0;
+
+    return local_int;
+}
+```
+
+#### a) Compile and inspect
+
+* Compile normally:
+  `gcc -Wall -o primitives primitives.c`
+* Inspect with `file`, `ls -l`, `strings`, and `objdump -d primitives`.
+* Observe where globals are stored (`.data` section), where locals appear on the stack, and how return values are handled via registers (`eax` / `rax`).
+
+#### b) Compile only to object file:
+
+* `gcc -Wall -c primitives.c -o primitives.o`
+* Inspect with:
+  `objdump -d primitives.o`
+  `objdump -s -j .data primitives.o`
+
+#### c) Analyze:
+
+* What instructions are used for `float` multiplication?
+* Where are `char` manipulations visible in the assembly?
+* Which registers are used for returning `int` from `main`?
+
+---
+
+### Task 2: Compiling a Standalone Function
+
+Now create a second file:
+
+```C
+// file: function.c
+
+int add(int a, int b) {
+    int sum = a + b;
+    return sum;
+}
+```
+
+#### a) Compile to object file only:
+
+* `gcc -Wall -c function.c -o function.o`
+
+#### b) Inspect with objdump:
+
+* `objdump -d function.o`
+
+#### c) Observe:
+
+* How parameters are passed into the function (e.g. registers `rdi`, `rsi`).
+* How return value is placed into `eax` / `rax`.
+
+---
+
+### Task 3: Inline Assembly — Writing to Terminal
+
+Create the following file:
+
+```C
+// file: syscall.c
+
+char message[] = "Hello via syscall\n";
+
+int main() {
+    long len = 17; // length of message
+    long fd = 1;   // stdout
+
+    asm volatile (
+        "movq $1, %%rax\n"     // syscall number for write
+        "movq %0, %%rdi\n"     // file descriptor
+        "movq %1, %%rsi\n"     // pointer to message
+        "movq %2, %%rdx\n"     // message length
+        "syscall\n"
+        :
+        : "r"(fd), "r"(message), "r"(len)
+        : "%rax", "%rdi", "%rsi", "%rdx"
+    );
+
+    return 0;
+}
+```
+
+#### a) Compile:
+
+* `gcc -Wall -o syscall syscall.c`
+
+#### b) Inspect:
+
+* Use `objdump -d syscall` to find where the syscall is issued.
+* Verify which registers are loaded before `syscall` is executed.
+
+#### c) Change Output Stream:
+
+* Try changing the `fd` to `2` and verify that the message goes to `stderr`.
+
+---
 
 ## Questions
-1. What are the main benefits of learning through exercises compared to passive learning?
-2. How do exercises improve long-term retention?
-3. Can you think of a subject where learning through exercises might be less effective? Why?
-4. What role does feedback play in learning through exercises?
-5. How can self-designed exercises improve understanding?
-6. Why is it beneficial to review past mistakes in exercises?
-7. How does explaining a concept to someone else reinforce your own understanding?
-8. What strategies can you use to stay motivated when practicing with exercises?
-9. How can timed challenges contribute to learning efficiency?
-10. How do exercises help bridge the gap between theory and practical application?
+
+1. How are `int`, `char`, and `float` values represented in memory?
+2. What is the purpose of the `.data` section in the object file?
+3. How does the compiler handle return values from `main`?
+4. Which registers are used for argument passing in `add()`?
+5. Why do we need to declare clobbered registers in inline assembly?
+6. What is the syscall number for `write` on x86\_64 Linux?
+7. How does `objdump` help you correlate source code with generated machine code?
 
 ## Advice
-Practice consistently and seek out diverse exercises that challenge different aspects of a topic. Combine exercises with reflection and feedback to maximize your learning efficiency. Don't hesitate to adapt exercises to fit your own needs and ensure that you're actively engaging with the material, rather than just going through the motions.
 
+In this exercise, you got your first taste of how closely C can interact with the hardware. Although C is a high-level language, you are only one layer away from manipulating registers and issuing system calls directly. Inline assembly is a powerful tool — but should be used sparingly in real-world code. Always remember to analyze your binaries using `objdump` and compare the generated assembly with your expectations. As you grow more confident, try using `gcc -O1` or `-O2` to observe how optimizations modify your generated code. Later exercises will deepen your understanding of calling conventions, stack layout, and more advanced system interaction.
