@@ -91,9 +91,14 @@ int main() {
 
 #### c) Analyze:
 
-* What instructions are used for `float` multiplication?
-* Where are `char` manipulations visible in the assembly?
-* Which registers are used for returning `int` from `main`?
+* What instructions are used for `float` multiplication? movss  0x2ec6(%rip),%xmm0
+                                                        addss  %xmm0,%xmm0  Instead of multiplieing, it works by simply addin 2 times the register %xmm0 instead of multiplieng times 2.0
+  
+* Where are `char` manipulations visible in the assembly? movzbl 0x2ed0(%rip), %eax 
+                                                          add   $0x1, %eax
+                                                          mov   %al, -0x9(%rbp)
+  
+* Which registers are used for returning `int` from `main`? -0x8(%rbp) and %eax for returning
 
 ---
 
