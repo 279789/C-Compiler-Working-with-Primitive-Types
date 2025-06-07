@@ -181,13 +181,13 @@ int main() {
 
 ## Questions
 
-1. How are `int`, `char`, and `float` values represented in memory?
-2. What is the purpose of the `.data` section in the object file?
-3. How does the compiler handle return values from `main`?
-4. Which registers are used for argument passing in `add()`?
-5. Why do we need to declare clobbered registers in inline assembly?
-6. What is the syscall number for `write` on x86\_64 Linux?
-7. How does `objdump` help you correlate source code with generated machine code?
+1. How are `int`, `char`, and `float` values represented in memory? int = 4 Byte , float = 4 Byte, char= 1Byte
+2. What is the purpose of the `.data` section in the object file? The .data section is used to declare variables and give them their value.
+3. How does the compiler handle return values from `main`? he does this by loading data in to the %eax register. With ret he is returning that. 
+4. Which registers are used for argument passing in `add()`? %edi and %esi
+5. Why do we need to declare clobbered registers in inline assembly? Otherwise the compiler thinks that they are empty and uses the old content from them. That could cause bugs, because the program then uses wrong content.
+6. What is the syscall number for `write` on x86\_64 Linux? Its 1.
+7. How does `objdump` help you correlate source code with generated machine code? It shows me the interpretation of my code, it helps me to make my code more efficient.
 
 ## Advice
 
