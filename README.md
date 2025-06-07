@@ -171,11 +171,11 @@ int main() {
 #### b) Inspect:
 
 * Use `objdump -d syscall` to find where the syscall is issued.
-* Verify which registers are loaded before `syscall` is executed.
-
+* Verify which registers are loaded before `syscall` is executed.   mov    $0x1,%rax
+  mov    %rcx,%rdi
 #### c) Change Output Stream:
 
-* Try changing the `fd` to `2` and verify that the message goes to `stderr`.
+* Try changing the `fd` to `2` and verify that the message goes to `stderr`. Works
 
 ---
 
