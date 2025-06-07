@@ -126,7 +126,13 @@ int add(int a, int b) {
 #### c) Observe:
 
 * How parameters are passed into the function (e.g. registers `rdi`, `rsi`).
-* How return value is placed into `eax` / `rax`.
+    mov    %edi,-0x14(%rbp)
+   mov    %esi,-0x18(%rbp)
+   mov    -0x14(%rbp),%edx
+   mov    -0x18(%rbp),%eax
+  Now follows a simplified explanation:
+  the 2 variables of the functions get loaded into the storage, than they get loaded into %eax and %edx registers. Those registers are than added...
+* How return value is placed into `eax` / `rax`. eax is stored on rbp that is loaded into eax, rbp gets restored and eax is returned with ret.
 
 ---
 
